@@ -8,22 +8,17 @@ public class WatchHistory extends JFrame {
     WatchHistory(int userId){
 
         setTitle("History");
-        setSize(600,400);
+        setSize(900, 550);
         setLocationRelativeTo(null);
+        setResizable(true);
 
         Font buttonFont = new Font("Arial", Font.PLAIN, 14);
 
-        JPanel mainPanel = new JPanel(new GridBagLayout());
-        add(mainPanel);
-
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.add(contentPanel);
-
         JLabel title = new JLabel("Watch History");
-        title.setFont(new Font("Arial", Font.BOLD, 20));
+        title.setFont(new Font("Arial", Font.BOLD, 24));
+        title.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
         title.setHorizontalAlignment(SwingConstants.CENTER);
-        contentPanel.add(title, BorderLayout.NORTH);
+        add(title, BorderLayout.NORTH);
 
         DefaultTableModel model = new DefaultTableModel(){
             public boolean isCellEditable(int r,int c){ return false; }
@@ -31,16 +26,24 @@ public class WatchHistory extends JFrame {
 
         JTable table = new JTable(model);
         table.setFont(new Font("Arial", Font.PLAIN, 14));
-        model.setColumnIdentifiers(new String[]{"Title","Genre","Date"});
+        table.setRowHeight(28);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+        model.setColumnIdentifiers(new String[]{"Title", "Genre", "Date"});
+
+        table.getColumnModel().getColumn(0).setMinWidth(300);
+        table.getColumnModel().getColumn(1).setMinWidth(120);
+        table.getColumnModel().getColumn(2).setMinWidth(150);
 
         JScrollPane scrollPane = new JScrollPane(table);
-        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        add(scrollPane, BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
         JButton back = new JButton("Back");
         back.setFont(buttonFont);
         bottomPanel.add(back);
-        contentPanel.add(bottomPanel, BorderLayout.SOUTH);
+        add(bottomPanel, BorderLayout.SOUTH);
 
         back.addActionListener(e -> dispose());
 
