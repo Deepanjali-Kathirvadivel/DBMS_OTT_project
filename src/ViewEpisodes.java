@@ -21,6 +21,7 @@ public class ViewEpisodes extends JFrame {
         this.userId = userId;
         this.role = role;
         this.isPremium = isPremium;
+        this.contentId = 0;
 
         setTitle("Episodes - " + seriesTitle);
         setSize(850, 500);

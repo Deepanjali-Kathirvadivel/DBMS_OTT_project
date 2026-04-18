@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.sql.*;
+import java.util.Date;
 
 public class LoginPage extends JFrame {
 
@@ -112,27 +113,34 @@ public class LoginPage extends JFrame {
     }
 
     void performLogin() {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
         try {
-            Connection conn = DBConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(
+            conn = DBConnection.getConnection();
+            ps = conn.prepareStatement(
                     "SELECT * FROM users WHERE email=? AND password=?"
             );
 
             ps.setString(1, email.getText());
             ps.setString(2, new String(password.getPassword()));
 
-            ResultSet rs = ps.executeQuery();
+            rs = ps.executeQuery();
 
             if (rs.next()) {
                 String role = rs.getString("role");
                 int userId = rs.getInt("user_id");
-                
+
                 Date expiry = rs.getDate("expiry_date");
                 boolean isPremium = false;
                 if (expiry != null) {
                     isPremium = expiry.after(new Date(System.currentTimeMillis()));
                 }
-                
+
+                rs.close();
+                ps.close();
+                conn.close();
+
                 new Dashboard(userId, role, isPremium);
                 dispose();
             } else {
@@ -142,6 +150,14 @@ public class LoginPage extends JFrame {
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (ps != null) ps.close();
+                if (conn != null) conn.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

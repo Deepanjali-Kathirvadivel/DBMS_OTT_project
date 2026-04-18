@@ -24,6 +24,7 @@ public class EditEpisode extends JFrame {
         setTitle("Edit Episode");
         setSize(400,450);
         setLocationRelativeTo(null);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         Font labelFont = new Font("Arial", Font.PLAIN, 14);
         Font fieldFont = new Font("Arial", Font.PLAIN, 16);
@@ -124,14 +125,17 @@ public class EditEpisode extends JFrame {
     }
 
     void loadEpisodeData(){
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
         try {
-            Connection conn = DBConnection.getConnection();
+            conn = DBConnection.getConnection();
 
-            PreparedStatement ps = conn.prepareStatement(
+            ps = conn.prepareStatement(
                     "SELECT season_number, episode_number, title, duration_minutes FROM episodes WHERE episode_id = ?"
             );
             ps.setInt(1, episodeId);
-            ResultSet rs = ps.executeQuery();
+            rs = ps.executeQuery();
 
             if(rs.next()){
                 seasonSpinner.setValue(rs.getInt("season_number"));
@@ -141,27 +145,43 @@ public class EditEpisode extends JFrame {
             } else {
                 JOptionPane.showMessageDialog(this, "Episode not found");
                 dispose();
+                closeResources(conn, ps, rs);
+                return;
             }
+
+            closeResources(conn, ps, rs);
 
         } catch(Exception ex){
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error loading episode data: " + ex.getMessage());
+            closeResources(conn, ps, rs);
         }
     }
 
     void saveChanges(){
+        Connection conn = null;
+        PreparedStatement ps = null;
         try {
-            Connection conn = DBConnection.getConnection();
+            conn = DBConnection.getConnection();
 
-            PreparedStatement ps = conn.prepareStatement(
+            int duration = 45;
+            try {
+                duration = Integer.parseInt(durationField.getText());
+            } catch (NumberFormatException e) {
+                duration = 45;
+            }
+
+            ps = conn.prepareStatement(
                     "UPDATE episodes SET season_number=?, episode_number=?, title=?, duration_minutes=? WHERE episode_id=?"
             );
             ps.setInt(1, (int) seasonSpinner.getValue());
             ps.setInt(2, (int) episodeSpinner.getValue());
             ps.setString(3, titleField.getText());
-            ps.setInt(4, Integer.parseInt(durationField.getText()));
+            ps.setInt(4, duration);
             ps.setInt(5, episodeId);
             ps.executeUpdate();
+
+            closeResources(conn, ps, null);
 
             JOptionPane.showMessageDialog(this, "Episode updated successfully!");
             if(parent != null){
@@ -172,6 +192,17 @@ public class EditEpisode extends JFrame {
         } catch(Exception ex){
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error saving changes: " + ex.getMessage());
+            closeResources(conn, ps, null);
+        }
+    }
+
+    void closeResources(Connection conn, PreparedStatement ps, ResultSet rs) {
+        try {
+            if (rs != null) rs.close();
+            if (ps != null) ps.close();
+            if (conn != null) conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

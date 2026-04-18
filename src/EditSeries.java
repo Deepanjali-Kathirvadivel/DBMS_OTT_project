@@ -237,16 +237,19 @@ public class EditSeries extends JFrame {
     }
 
     void loadSeriesData() {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
         try {
-            Connection conn = DBConnection.getConnection();
+            conn = DBConnection.getConnection();
 
-            PreparedStatement ps = conn.prepareStatement(
+            ps = conn.prepareStatement(
                     "SELECT c.title, c.genre, c.release_year, c.rating, c.trailer_link, c.poster, c.access_type, s.total_seasons, s.total_episodes " +
                     "FROM content c JOIN series s ON c.content_id = s.content_id " +
                     "WHERE c.content_id = ?"
             );
             ps.setInt(1, contentId);
-            ResultSet rs = ps.executeQuery();
+            rs = ps.executeQuery();
 
             if (rs.next()) {
                 titleField.setText(rs.getString("title") != null ? rs.getString("title") : "");
@@ -268,40 +271,76 @@ public class EditSeries extends JFrame {
             } else {
                 JOptionPane.showMessageDialog(this, "Series not found");
                 dispose();
+                closeResources(conn, ps, rs);
+                return;
             }
+
+            closeResources(conn, ps, rs);
 
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error loading series data: " + ex.getMessage());
+            closeResources(conn, ps, rs);
         }
     }
 
     void saveChanges() {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        PreparedStatement ps2 = null;
         try {
-            Connection conn = DBConnection.getConnection();
+            conn = DBConnection.getConnection();
 
             String accessType = basicRadio.isSelected() ? "basic" : "premium";
+            int year = 0;
+            double rating = 0.0;
+            int seasons = 1;
+            int episodes = 1;
 
-            PreparedStatement ps = conn.prepareStatement(
+            try {
+                year = Integer.parseInt(yearField.getText());
+            } catch (NumberFormatException e) {
+                year = 0;
+            }
+            try {
+                rating = Double.parseDouble(ratingField.getText());
+            } catch (NumberFormatException e) {
+                rating = 0.0;
+            }
+            try {
+                seasons = Integer.parseInt(seasonsField.getText());
+            } catch (NumberFormatException e) {
+                seasons = 1;
+            }
+            try {
+                episodes = Integer.parseInt(episodesField.getText());
+            } catch (NumberFormatException e) {
+                episodes = 1;
+            }
+
+            ps = conn.prepareStatement(
                     "UPDATE content SET title = ?, genre = ?, release_year = ?, rating = ?, trailer_link = ?, poster = ?, access_type = ? WHERE content_id = ?"
             );
             ps.setString(1, titleField.getText());
             ps.setString(2, genreField.getText());
-            ps.setInt(3, Integer.parseInt(yearField.getText()));
-            ps.setDouble(4, Double.parseDouble(ratingField.getText()));
+            ps.setInt(3, year);
+            ps.setDouble(4, rating);
             ps.setString(5, trailerField.getText());
             ps.setString(6, posterField.getText());
             ps.setString(7, accessType);
             ps.setInt(8, contentId);
             ps.executeUpdate();
+            ps.close();
 
-            PreparedStatement ps2 = conn.prepareStatement(
+            ps2 = conn.prepareStatement(
                     "UPDATE series SET total_seasons = ?, total_episodes = ? WHERE content_id = ?"
             );
-            ps2.setInt(1, Integer.parseInt(seasonsField.getText()));
-            ps2.setInt(2, Integer.parseInt(episodesField.getText()));
+            ps2.setInt(1, seasons);
+            ps2.setInt(2, episodes);
             ps2.setInt(3, contentId);
             ps2.executeUpdate();
+
+            closeResources(conn, ps, null);
 
             JOptionPane.showMessageDialog(this, "Series updated successfully!");
             if (parent != null) {
@@ -312,6 +351,17 @@ public class EditSeries extends JFrame {
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error saving changes: " + ex.getMessage());
+            closeResources(conn, ps, null);
+        }
+    }
+
+    void closeResources(Connection conn, PreparedStatement ps, ResultSet rs) {
+        try {
+            if (rs != null) rs.close();
+            if (ps != null) ps.close();
+            if (conn != null) conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

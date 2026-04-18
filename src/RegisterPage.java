@@ -121,12 +121,15 @@ public class RegisterPage extends JFrame {
                 }
 
                 PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO users(name, email, password, role) VALUES(?, ?, ?, 'user')"
+                        "INSERT INTO users(name, email, password, role) VALUES(?, ?, ?, 'user')",
+                        Statement.RETURN_GENERATED_KEYS
                 );
 
                 ps.setString(1, name.getText());
                 ps.setString(2, email.getText());
                 ps.setString(3, new String(pass.getPassword()));
+
+                ps.executeUpdate();
 
                 ps.executeUpdate();
 

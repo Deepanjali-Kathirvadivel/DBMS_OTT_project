@@ -16,6 +16,7 @@ public class AddEpisode extends JFrame {
         setTitle("Add Episodes");
         setSize(400,450);
         setLocationRelativeTo(null);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         Font labelFont = new Font("Arial", Font.PLAIN, 14);
         Font fieldFont = new Font("Arial", Font.PLAIN, 16);
@@ -101,6 +102,10 @@ public class AddEpisode extends JFrame {
         formPanel.add(buttonPanel, gbc);
 
         save.addActionListener(e -> {
+            if (title.getText().isEmpty() || duration.getText().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all fields");
+                return;
+            }
             try {
                 Connection conn = DBConnection.getConnection();
 
@@ -123,6 +128,10 @@ public class AddEpisode extends JFrame {
         });
 
         addMore.addActionListener(e -> {
+            if (title.getText().isEmpty() || duration.getText().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all fields");
+                return;
+            }
             try {
                 Connection conn = DBConnection.getConnection();
 

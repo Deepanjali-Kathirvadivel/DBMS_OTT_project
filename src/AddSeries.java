@@ -216,7 +216,7 @@ public class AddSeries extends JFrame {
 
     void saveSeries(JRadioButton basic, JRadioButton premium, boolean openEpisodeAdder) {
         if (title.getText().isEmpty() || genre.getText().isEmpty() || year.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill in required fields (Title, Genre, Year)", 
+            JOptionPane.showMessageDialog(this, "Please fill in required fields (Title, Genre, Year)",
                     "Validation Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -225,6 +225,9 @@ public class AddSeries extends JFrame {
             Connection conn = DBConnection.getConnection();
 
             String access = basic.isSelected() ? "basic" : "premium";
+            String seasText = seasons.getText().isEmpty() ? "1" : seasons.getText();
+            String episText = episodes.getText().isEmpty() ? "1" : episodes.getText();
+            String ratText = rating.getText().isEmpty() ? "0" : rating.getText();
 
             PreparedStatement ps = conn.prepareStatement(
                     "INSERT INTO content(title, description, genre, release_year, rating, trailer_link, content_type, poster, access_type) " +
@@ -236,7 +239,7 @@ public class AddSeries extends JFrame {
             ps.setString(2, "");
             ps.setString(3, genre.getText());
             ps.setInt(4, Integer.parseInt(year.getText()));
-            ps.setDouble(5, Double.parseDouble(rating.getText()));
+            ps.setDouble(5, Double.parseDouble(ratText));
             ps.setString(6, trailer.getText());
             ps.setString(7, poster.getText());
             ps.setString(8, access);
@@ -247,13 +250,22 @@ public class AddSeries extends JFrame {
             rs.next();
             int contentId = rs.getInt(1);
 
+            int seas = 1, epis = 1;
+            try {
+                seas = Integer.parseInt(seasText);
+                epis = Integer.parseInt(episText);
+            } catch (NumberFormatException e) {
+                seas = 1;
+                epis = 1;
+            }
+
             PreparedStatement ps2 = conn.prepareStatement(
                     "INSERT INTO series(content_id, total_seasons, total_episodes) VALUES(?, ?, ?)"
             );
 
             ps2.setInt(1, contentId);
-            ps2.setInt(2, Integer.parseInt(seasons.getText()));
-            ps2.setInt(3, Integer.parseInt(episodes.getText()));
+            ps2.setInt(2, seas);
+            ps2.setInt(3, epis);
 
             ps2.executeUpdate();
 
@@ -263,7 +275,7 @@ public class AddSeries extends JFrame {
                 ResultSet rs3 = ps3.executeQuery();
                 if (rs3.next()) {
                     int seriesId = rs3.getInt(1);
-                    new AddEpisode(seriesId, Integer.parseInt(seasons.getText()), Integer.parseInt(episodes.getText()));
+                    new AddEpisode(seriesId, seas, epis);
                 }
                 JOptionPane.showMessageDialog(this,
                         "Series added successfully!\n\nNow add episodes.",
@@ -275,7 +287,7 @@ public class AddSeries extends JFrame {
                         "Success",
                         JOptionPane.INFORMATION_MESSAGE);
             }
-            
+
             dispose();
 
         } catch (Exception ex) {

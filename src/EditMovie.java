@@ -252,14 +252,19 @@ public class EditMovie extends JFrame {
     }
 
     void loadMovieData() {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        PreparedStatement ps2 = null;
+        ResultSet rs = null;
+        ResultSet rs2 = null;
         try {
-            Connection conn = DBConnection.getConnection();
+            conn = DBConnection.getConnection();
 
-            PreparedStatement ps = conn.prepareStatement(
+            ps = conn.prepareStatement(
                     "SELECT title, genre, release_year, rating, trailer_link, poster, access_type FROM content WHERE content_id = ?"
             );
             ps.setInt(1, movieId);
-            ResultSet rs = ps.executeQuery();
+            rs = ps.executeQuery();
 
             if (rs.next()) {
                 titleField.setText(rs.getString("title") != null ? rs.getString("title") : "");
@@ -279,12 +284,16 @@ public class EditMovie extends JFrame {
             } else {
                 JOptionPane.showMessageDialog(this, "Movie not found");
                 dispose();
+                closeResources(conn, ps, rs, ps2, rs2);
                 return;
             }
 
-            PreparedStatement ps2 = conn.prepareStatement("SELECT * FROM movies WHERE movie_id = ?");
+            rs.close();
+            ps.close();
+
+            ps2 = conn.prepareStatement("SELECT * FROM movies WHERE movie_id = ?");
             ps2.setInt(1, movieId);
-            ResultSet rs2 = ps2.executeQuery();
+            rs2 = ps2.executeQuery();
             if (rs2.next()) {
                 int duration = rs2.getInt("duration");
                 durationField.setText(duration > 0 ? String.valueOf(duration) : "90");
@@ -296,39 +305,67 @@ public class EditMovie extends JFrame {
                 castField.setText("");
             }
 
+            closeResources(conn, ps, rs, ps2, rs2);
+
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error loading movie data: " + ex.getMessage());
+            closeResources(conn, ps, rs, ps2, rs2);
         }
     }
 
     void saveChanges() {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        PreparedStatement ps2 = null;
         try {
-            Connection conn = DBConnection.getConnection();
+            conn = DBConnection.getConnection();
 
             String accessType = basicRadio.isSelected() ? "basic" : "premium";
+            int year = 0;
+            double rating = 0.0;
+            int duration = 90;
 
-            PreparedStatement ps = conn.prepareStatement(
+            try {
+                year = Integer.parseInt(yearField.getText());
+            } catch (NumberFormatException e) {
+                year = 0;
+            }
+            try {
+                rating = Double.parseDouble(ratingField.getText());
+            } catch (NumberFormatException e) {
+                rating = 0.0;
+            }
+            try {
+                duration = Integer.parseInt(durationField.getText());
+            } catch (NumberFormatException e) {
+                duration = 90;
+            }
+
+            ps = conn.prepareStatement(
                     "UPDATE content SET title = ?, genre = ?, release_year = ?, rating = ?, trailer_link = ?, poster = ?, access_type = ? WHERE content_id = ?"
             );
             ps.setString(1, titleField.getText());
             ps.setString(2, genreField.getText());
-            ps.setInt(3, Integer.parseInt(yearField.getText()));
-            ps.setDouble(4, Double.parseDouble(ratingField.getText()));
+            ps.setInt(3, year);
+            ps.setDouble(4, rating);
             ps.setString(5, trailerField.getText());
             ps.setString(6, posterField.getText());
             ps.setString(7, accessType);
             ps.setInt(8, movieId);
             ps.executeUpdate();
+            ps.close();
 
-            PreparedStatement ps2 = conn.prepareStatement(
+            ps2 = conn.prepareStatement(
                     "UPDATE movies SET duration = ?, director = ?, cast = ? WHERE movie_id = ?"
             );
-            ps2.setInt(1, Integer.parseInt(durationField.getText()));
+            ps2.setInt(1, duration);
             ps2.setString(2, directorField.getText());
             ps2.setString(3, castField.getText());
             ps2.setInt(4, movieId);
             ps2.executeUpdate();
+
+            closeResources(conn, ps, null, ps2, null);
 
             JOptionPane.showMessageDialog(this, "Movie updated successfully!");
             if (parent != null) {
@@ -339,6 +376,19 @@ public class EditMovie extends JFrame {
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error saving changes: " + ex.getMessage());
+            closeResources(conn, ps, null, ps2, null);
+        }
+    }
+
+    void closeResources(Connection conn, PreparedStatement ps, ResultSet rs, PreparedStatement ps2, ResultSet rs2) {
+        try {
+            if (rs != null) rs.close();
+            if (rs2 != null) rs2.close();
+            if (ps != null) ps.close();
+            if (ps2 != null) ps2.close();
+            if (conn != null) conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

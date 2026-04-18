@@ -228,7 +228,7 @@ public class AddMovie extends JFrame {
 
     void saveMovie(JRadioButton basic, JRadioButton premium) {
         if (title.getText().isEmpty() || genre.getText().isEmpty() || year.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill in required fields (Title, Genre, Year)", 
+            JOptionPane.showMessageDialog(this, "Please fill in required fields (Title, Genre, Year)",
                     "Validation Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -237,6 +237,8 @@ public class AddMovie extends JFrame {
             Connection conn = DBConnection.getConnection();
 
             String access = basic.isSelected() ? "basic" : "premium";
+            String durText = duration.getText().isEmpty() ? "90" : duration.getText();
+            String ratText = rating.getText().isEmpty() ? "0" : rating.getText();
 
             PreparedStatement ps = conn.prepareStatement(
                     "INSERT INTO content(title, description, genre, release_year, rating, trailer_link, content_type, poster, access_type) " +
@@ -248,7 +250,7 @@ public class AddMovie extends JFrame {
             ps.setString(2, "");
             ps.setString(3, genre.getText());
             ps.setInt(4, Integer.parseInt(year.getText()));
-            ps.setDouble(5, Double.parseDouble(rating.getText()));
+            ps.setDouble(5, Double.parseDouble(ratText));
             ps.setString(6, trailer.getText());
             ps.setString(7, poster.getText());
             ps.setString(8, access);
@@ -259,12 +261,19 @@ public class AddMovie extends JFrame {
             rs.next();
             int id = rs.getInt(1);
 
+            int dur = 90;
+            try {
+                dur = Integer.parseInt(durText);
+            } catch (NumberFormatException e) {
+                dur = 90;
+            }
+
             PreparedStatement ps2 = conn.prepareStatement(
-                    "INSERT INTO movies VALUES(?, ?, ?, ?)"
+                    "INSERT INTO movies(movie_id, duration, director, cast) VALUES(?, ?, ?, ?)"
             );
 
             ps2.setInt(1, id);
-            ps2.setInt(2, Integer.parseInt(duration.getText()));
+            ps2.setInt(2, dur);
             ps2.setString(3, director.getText());
             ps2.setString(4, cast.getText());
 
@@ -274,7 +283,7 @@ public class AddMovie extends JFrame {
                     "Movie added successfully!\n\n\"" + title.getText() + "\" has been added to the library.",
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
-            
+
             dispose();
 
         } catch (Exception ex) {
